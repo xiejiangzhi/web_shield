@@ -3,7 +3,7 @@ require 'logger'
 module WebShield
   class Config
     attr_accessor :store, :user_parser, :blocked_response, :logger
-    attr_reader :shields, :ip_whitelist, :ip_blacklist
+    attr_reader :shields
 
     def initialize
       @shields = []
