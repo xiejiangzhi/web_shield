@@ -1,9 +1,12 @@
+require 'logger'
+
 module WebShield
   RSpec.describe ThrottleShield do
     let(:config) do
       double('config', {
         user_parser: Proc.new {|request| request.params['token'] },
-        store: MemoryStore.new
+        store: MemoryStore.new,
+        logger: Logger.new('/dev/null')
       })
     end
     let(:shield) { build_shield('id1', '*') }
