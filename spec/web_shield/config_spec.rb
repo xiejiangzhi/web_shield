@@ -39,44 +39,17 @@ module WebShield
 
     describe '#build_shield' do
       it 'should add shield' do
-        args = ['/api/*', preiod: 1, limit: 2]
+        args = ['/api/*', period: 1, limit: 2]
         expect {
           config.build_shield(*args)
           config.build_shield(*args)
         }.to change(config.shields, :count).by(2)
 
-        expect(config.shields.last).to eq(args + [nil])
-      end
-
-      it 'should raise error, invalid args' do
-        expect {
-          expect {
-            config.build_shield '/api/*'
-          }.to raise_error(Error, 'Need options or block')
-        }.to_not change(config.shields, :count)
-      end
-    end
-
-    describe '#use' do
-      it 'should add plugin' do
-        plugin = double('plugin', new: true)
-        plugin2 = double('plugin2', new: true)
-
-        expect {
-          config.use(plugin)
-          config.use(plugin)
-          config.use(plugin2, a: 1)
-        }.to change(config.plugins, :count).by(2)
-
-        expect(config.plugins.last).to eq([plugin2, {a: 1}, nil])
-      end
-
-      it 'should raise error, invalid args' do
-        expect {
-          expect {
-            config.use double('invalid-plugin')
-          }.to raise_error(Error, 'Need a plugin class')
-        }.to_not change(config.plugins, :count)
+        shield = config.shields.last
+        expect(shield).to be_is_a(ThrottleShield)
+        expect(shield.options).to eql(period: 1, limit: 2)
+        expect(config.shields[0].id).to eql(1)
+        expect(config.shields[1].id).to eql(2)
       end
     end
   end

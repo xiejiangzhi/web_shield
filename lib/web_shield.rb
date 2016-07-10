@@ -1,17 +1,17 @@
 require "web_shield/version"
 
-require 'active_support'
-require 'active_support/core_ext'
+require 'rack'
+# require 'active_support'
+# require 'active_support/core_ext'
 
 module WebShield
-  extend ActiveSupport::Autoload
-
   class Error < StandardError; end
 
-  autoload :Config
-  autoload :MemoryStore
-  autoload :Shield
-  autoload :Middleware
+  autoload :Config, 'web_shield/config'
+  autoload :MemoryStore, 'web_shield/memory_store'
+  autoload :Shield, 'web_shield/shield'
+  autoload :ThrottleShield, 'web_shield/throttle_shield'
+  autoload :Middleware, 'web_shield/middleware'
 
   class << self
     attr_reader :config

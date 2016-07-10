@@ -16,8 +16,8 @@ module WebShield
           if @data[key][1] == current_period
             @data[key][0] += 1
           else
-            @data[key][0], @data[key][1] = 1, current_period
-            1
+            @data[key][1] = current_period
+            @data[key][0] = 1
           end
         else
           @data[key] = [1, current_period]

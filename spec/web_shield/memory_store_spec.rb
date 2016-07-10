@@ -45,6 +45,20 @@ module WebShield
         expect(store.incr('a', 0)).to eq(3)
         expect(store.incr('a', 0)).to eq(4)
       end
+
+      it 'should correct when multiple threads' do
+        10.times.map {
+          [Thread.new { store.incr('a') }, Thread.new { store.incr('b') }]
+        }.flatten.map(&:join)
+        %w{a b}.each {|key| expect(store.incr(key)).to eql(11) }
+
+        t = Time.now
+        allow(Time).to receive(:now).and_return(t)
+        10.times.map {
+          [Thread.new { store.incr('c', 1) }, Thread.new { store.incr('d', 1) }]
+        }.flatten.map(&:join)
+        %w{c d}.each {|key| expect(store.incr(key, 1)).to eql(11) }
+      end
     end
 
     describe '#reset' do

@@ -1,11 +1,17 @@
+require 'logger'
+
 module WebShield
   class Config
-    attr_accessor :store, :user_parser
-    attr_reader :shields, :plugins, :ip_whitelist, :ip_blacklist
+    attr_accessor :store, :user_parser, :blocked_response, :logger
+    attr_reader :shields, :ip_whitelist, :ip_blacklist
 
     def initialize
       @shields = []
-      @plugins = []
+      @shield_counter = 0
+
+      @user_parser = Proc.new {|req| req.ip }
+      @blocked_response = Proc.new {|req| [429, {}, ['Too Many Requests']] }
+      @logger = Logger.new($stdout)
     end
 
     def store=(store)
@@ -24,15 +30,9 @@ module WebShield
       end
     end
 
-    def build_shield(path_matcher, options = nil, &block)
-      raise Error, 'Need options or block' unless options || block
-      shields << [path_matcher, options, block]
-    end
-
-    def use(plugin, options = nil, &block)
-      raise Error, 'Need a plugin class' unless plugin.respond_to?(:new)
-      plugins.delete_if {|p, _, _| p == plugin }
-      plugins << [plugin, options, block]
+    def build_shield(path_matcher, options, shield_class = ThrottleShield)
+      shields << shield_class.new(@shield_counter += 1, path_matcher, options, self)
+      logger.info("Build shield #{shields.last.id} #{path_matcher} #{options}")
     end
   end
 end
