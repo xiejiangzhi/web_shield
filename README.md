@@ -26,7 +26,7 @@ See `exmaples/base_config.rb`
 * `logger`: Logger instance
 * `user_parser`: 每个请求的限制都是按用户来的
 * `blocked_response`: 当 block 时返回的内容
-* `build_shield`: 构建防御，一个请求过来请会按构建的顺序去一一检查，如果有一个未通过，直接拒绝请求，如果带 skip_shields，当此 shield 被匹配时，如果通过则执行正常的业务，如果不通过则拒绝请求
+* `build_shield`: 构建防御，一个请求过来请会按构建的顺序去一一检查，如果有一个未通过，直接拒绝请求，如果指定了 dictatorial，当此 shield 被匹配时，如果通过则执行正常的业务，如果不通过则拒绝请求
 
 ### Build shield options
 
