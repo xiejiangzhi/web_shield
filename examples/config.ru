@@ -3,6 +3,7 @@
 require 'pry'
 require File.expand_path('../base_config', __FILE__)
 require File.expand_path('../more_shields_config', __FILE__)
+require File.expand_path('../ip_shield_config', __FILE__)
 
 class RackBenchmark
   def initialize(app)
@@ -40,4 +41,10 @@ map '/api/v2' do
   use WebShield::Middleware, $more_shields_config
   run app
 end
+
+map '/api/ip' do
+  use WebShield::Middleware, $ip_config
+  run app
+end
+
 

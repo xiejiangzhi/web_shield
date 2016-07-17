@@ -39,6 +39,9 @@ module WebShield
 
     describe '#build_shield' do
       it 'should add shield' do
+        t = Time.now
+        allow(Time).to receive(:now).and_return(t)
+
         args = ['/api/*', period: 1, limit: 2]
         expect {
           config.build_shield(*args)
@@ -48,8 +51,14 @@ module WebShield
         shield = config.shields.last
         expect(shield).to be_is_a(ThrottleShield)
         expect(shield.options).to eql(period: 1, limit: 2)
-        expect(config.shields[0].id).to eql(1)
-        expect(config.shields[1].id).to eql(2)
+        expect(config.shields[0].id).to eql("#{t.to_f}-1")
+        expect(config.shields[1].id).to eql("#{t.to_f}-2")
+      end
+
+      it 'should return shield' do
+        shield = config.build_shield('*', period: 2, limit: 3)
+        expect(shield).to be_a(ThrottleShield)
+        expect(shield.options).to eql(period: 2, limit: 3)
       end
     end
   end

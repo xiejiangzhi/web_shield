@@ -1,4 +1,5 @@
 require 'monitor'
+require 'set'
 
 module WebShield
   class MemoryStore
@@ -24,6 +25,29 @@ module WebShield
           1
         end
       end
+    end
+
+    def push_to_set(key, vals)
+      values = vals.is_a?(Array) ? vals.map(&:to_s) : [vals.to_s]
+      @lock.synchronize do
+        @data[key] ||= Set.new
+        @data[key].merge(values)
+      end
+      true
+    end
+
+    def del_from_set(key, vals)
+      key_data = @data[key]
+      return false unless key_data && key_data.is_a?(Set)
+      values = vals.is_a?(Array) ? vals.map(&:to_s) : [vals.to_s]
+      @lock.synchronize do
+        key_data.delete_if {|val| values.include?(val) }
+      end
+      true
+    end
+
+    def read_set(key)
+      @data[key] || Set.new
     end
 
     def reset(key)

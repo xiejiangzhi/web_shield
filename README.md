@@ -18,7 +18,20 @@ Or install it yourself as:
 
 ## Usage
 
-See `exmaples/base_config.rb`
+
+```
+config = WebShield::Config.new
+config.store = WebShield::MemoryStore.new # or WebShield::RedisStore.new(redis: Redis.current)
+config.user_parser = Proc.new {|request| request.params[:token] || request.ip }
+
+config.build_shield("*", {
+  whitelist: %w{127.0.0.1, 192.168.10.1/8},
+  blacklist: %w{123.123.123.123 222.222.222.0/8}
+}, WebShield::IPShield)
+config.build_shield "/api/:ver/*", {period: 30, limit: 10}
+```
+
+More see `exmaples/*_config.rb`
 
 ### Config options
 
@@ -38,7 +51,7 @@ See `exmaples/base_config.rb`
 
 ## TODO
 
-* UserShield: user whitelist and blacklist
+* Optimize IPShield#ip_in_list?
 * HoneypotShield: 
 * Auto block request:
 

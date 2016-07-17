@@ -71,12 +71,6 @@ module WebShield
         shield2 = build_shield('id', '*', 'period' => 3, 'limit' => 1)
         expect(shield2.options).to eql(period: 3, limit: 1)
       end
-
-      it 'should raise error if have invalid keys' do
-        expect {
-          build_shield('id', '*', 'period' => 3, 'limit' => 1, test: 1)
-        }.to raise_error(Error, 'Invalid shield option \'test\'')
-      end
     end
 
     describe '#config' do

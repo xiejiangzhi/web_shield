@@ -1,5 +1,3 @@
-require 'logger'
-
 module WebShield
   RSpec.describe ThrottleShield do
     let(:config) do
@@ -16,6 +14,14 @@ module WebShield
 
     def build_shield(id, path, opts = {period: 3, limit: 3})
       ThrottleShield.new(id, path, opts, config)
+    end
+
+    describe '#initialize' do
+      it 'should raise error, if have invalid options' do
+        expect {
+          ThrottleShield.new('id1', '*', {test: 1}, config)
+        }.to raise_error("Invalid shield option 'test'")
+      end
     end
 
     describe '#filter' do

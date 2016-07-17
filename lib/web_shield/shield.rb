@@ -3,15 +3,7 @@ require 'digest'
 module WebShield
   class Shield
     attr_reader :id, :shield_path, :path_matcher, :options, :config
-    OPTION_KEYS =[:period, :limit, :method, :path_sensitive, :dictatorial]
 
-    # Params:
-    #   path:
-    #   options:
-    #     period: required
-    #     limit: required
-    #     method: optional
-    #     path_sensitive: optional, defualt false
     def initialize(id, shield_path, options, config)
       @id = id
       @shield_path = shield_path
@@ -29,6 +21,18 @@ module WebShield
       @options[:dictatorial]
     end
 
+    def write_log(severity, msg)
+      case svrt = severity.to_sym
+      when :debug, :info, :warn, :error
+        config.logger.send(svrt, "#{shield_name} #{msg}")
+      else
+        raise "Invalid log severity '#{svrt}'"
+      end
+    end
+
+    def shield_name
+      self.class.name.split('::', 2).last + "\##{id}"
+    end
 
     private
 
@@ -45,7 +49,6 @@ module WebShield
     def hash_to_symbol_keys(hash)
       hash.each_with_object({}) do |kv, result|
         key, val = kv[0].to_sym, kv[1]
-        raise Error, "Invalid shield option '#{key}'" unless OPTION_KEYS.include?(key)
         result[key] = val
       end
     end

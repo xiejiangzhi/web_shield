@@ -8,6 +8,7 @@ module WebShield
     def initialize
       @shields = []
       @shield_counter = 0
+      @id_prefix = Time.now.to_f.to_s
 
       @user_parser = Proc.new {|req| req.ip }
       @blocked_response = Proc.new {|req| [429, {}, ['Too Many Requests']] }
@@ -30,9 +31,19 @@ module WebShield
       end
     end
 
+    # return shield
     def build_shield(path_matcher, options, shield_class = ThrottleShield)
-      shields << shield_class.new(@shield_counter += 1, path_matcher, options, self)
-      logger.info("Build shield #{shields.last.id} #{path_matcher} #{options}")
+      shield_class.new(generate_id, path_matcher, options, self).tap do |shield|
+        shields << shield
+        logger.info("Build #{shield.shield_name} #{path_matcher} #{options}")
+      end
+    end
+
+
+    private
+
+    def generate_id
+      "#{@id_prefix}-#{@shield_counter += 1}"
     end
   end
 end

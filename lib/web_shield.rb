@@ -8,9 +8,13 @@ module WebShield
   class Error < StandardError; end
 
   autoload :Config, 'web_shield/config'
+
   autoload :MemoryStore, 'web_shield/memory_store'
+
   autoload :Shield, 'web_shield/shield'
   autoload :ThrottleShield, 'web_shield/throttle_shield'
+  autoload :IPShield, 'web_shield/ip_shield'
+
   autoload :Middleware, 'web_shield/middleware'
 
   class << self
