@@ -57,6 +57,7 @@ More see `exmaples/*_config.rb`
 
 ## TODO
 
+* RedisStore
 * Optimize IPShield#ip_in_list?
 * HoneypotShield: 
 * Auto block request:
