@@ -2,6 +2,40 @@ RSpec.shared_examples 'store_describes' do |store_cls|
   describe "store" do
     let(:store) { store_cls.new }
 
+    describe '#get/#set' do
+      it 'should set key' do
+        expect(store.set('a', 1)).to eq('1')
+        expect(store.get('a')).to eq('1')
+
+        expect(store.set('b', 'asdf')).to eq('asdf')
+        expect(store.get('b')).to eq('asdf')
+
+        expect(store.get('a')).to eq('1')
+
+        expect(store.set('a', 'hello')).to eq('hello')
+        expect(store.get('a')).to eq('hello')
+      end
+
+      it 'should expire data, if expire < current time' do
+        t = Time.now
+        expire_at = t + 10
+        allow(Time).to receive(:now).and_return(t)
+
+        expect(store.set('a', 'hello', expire_at: expire_at)).to eq('hello')
+        expect(store.get('a')).to eq('hello')
+
+        allow(Time).to receive(:now).and_return(t + 9)
+        expect(store.get('a')).to eq('hello')
+
+        allow(Time).to receive(:now).and_return(t + 10)
+        expect(store.get('a')).to eq(nil)
+        expect(store.get('a')).to eq(nil) # double check
+
+        allow(Time).to receive(:now).and_return(t + 1123)
+        expect(store.get('a')).to eq(nil)
+      end
+    end
+
     describe '#incr' do
       it 'should incr counter' do
         expect(store.incr('a')).to eq(1)
@@ -12,52 +46,52 @@ RSpec.shared_examples 'store_describes' do |store_cls|
       end
 
       it 'should expire old counter' do
-        period = 6
-        t = Time.at(Time.now.to_i / period * period)
+        t = Time.now
+        et = t + 10
 
         allow(Time).to receive(:now).and_return(t)
-        expect(store.incr('a', period)).to eq(1)
-        expect(store.incr('a', period)).to eq(2)
-        expect(store.incr('b', period / 2)).to eq(1)
-        expect(store.incr('b', period / 2)).to eq(2)
+        expect(store.incr('a', expire_at: et)).to eq(1)
+        expect(store.incr('a', expire_at: et)).to eq(2)
+        expect(store.get('a')).to eq('2')
+        expect(store.incr('b', expire_at: et - 5)).to eq(1)
+        expect(store.incr('b', expire_at: et - 5)).to eq(2)
+        expect(store.get('b')).to eq('2')
 
-        allow(Time).to receive(:now).and_return(t + 3)
-        expect(store.incr('a', period)).to eq(3)
-        expect(store.incr('a', period)).to eq(4)
-        expect(store.incr('b', period / 2)).to eq(1)
-        expect(store.incr('b', period / 2)).to eq(2)
-
-        allow(Time).to receive(:now).and_return(t + 4)
-        expect(store.incr('a', period)).to eq(5)
-        expect(store.incr('a', period)).to eq(6)
-        expect(store.incr('b', period / 2)).to eq(3)
-        expect(store.incr('b', period / 2)).to eq(4)
+        allow(Time).to receive(:now).and_return(t + 5)
+        expect(store.incr('a', expire_at: et)).to eq(3)
+        expect(store.incr('a', expire_at: et)).to eq(4)
+        expect(store.get('a')).to eq('4')
+        expect(store.incr('b', expire_at: et - 5)).to eq(1)
+        expect(store.incr('b', expire_at: et - 5)).to eq(1)
+        expect(store.get('b')).to eq(nil)
       end
 
-      it 'should not expire, if period = 0' do
+      it 'should not expire, if expire_at eql nil' do
         t = Time.now
 
         allow(Time).to receive(:now).and_return(t)
-        expect(store.incr('a', 0)).to eq(1)
-        expect(store.incr('a', 0)).to eq(2)
+        expect(store.incr('a')).to eq(1)
+        expect(store.incr('a')).to eq(2)
 
         allow(Time).to receive(:now).and_return(t + 1000000)
-        expect(store.incr('a', 0)).to eq(3)
-        expect(store.incr('a', 0)).to eq(4)
+        expect(store.incr('a')).to eq(3)
+        expect(store.incr('a')).to eq(4)
       end
 
       it 'should correct store when use multiple threads' do
         10.times.map {
           [Thread.new { store.incr('a') }, Thread.new { store.incr('b') }]
         }.flatten.map(&:join)
-        %w{a b}.each {|key| expect(store.incr(key)).to eql(11) }
+        %w{a b}.each {|key| expect(store.get(key)).to eql('10') }
 
-        t = Time.now
-        allow(Time).to receive(:now).and_return(t)
+        et = Time.now + 3
         10.times.map {
-          [Thread.new { store.incr('c', 1) }, Thread.new { store.incr('d', 1) }]
+          [
+            Thread.new { store.incr('c', expire_at: et) },
+            Thread.new { store.incr('d', expire_at: et) }
+          ]
         }.flatten.map(&:join)
-        %w{c d}.each {|key| expect(store.incr(key, 1)).to eql(11) }
+        %w{c d}.each {|key| expect(store.incr(key)).to eql(11) }
       end
     end
 
@@ -81,51 +115,74 @@ RSpec.shared_examples 'store_describes' do |store_cls|
       end
     end
 
-    describe '#push_to_set' do
+    describe '#sadd' do
       it 'should add to set' do
         expect {
-          store.push_to_set('a', 1)
-          store.push_to_set('a', 2)
-        }.to change { store.read_set('a').length }.by(2)
-        expect(store.read_set('a')).to eq(Set.new(['1', '2']))
+          store.sadd('a', 1)
+          store.sadd(:a, 2)
+        }.to change { store.smembers('a').length }.by(2)
+        expect(store.smembers('a')).to eq(Set.new(['1', '2']))
       end
 
       it 'should add to set if give multiple values' do
         expect {
-          store.push_to_set('a', [1, 2])
-        }.to change { store.read_set('a').length }.by(2)
-        expect(store.read_set('a')).to eq(Set.new(['1', '2']))
+          store.sadd('a', [1, 2])
+        }.to change { store.smembers('a').length }.by(2)
+        expect(store.smembers(:a)).to eq(Set.new(['1', '2']))
       end
 
       it 'should correct store when use multiple threads' do
         10.times.map {|i|
-          [Thread.new { store.push_to_set('a', i) }, Thread.new { store.push_to_set('b', [i]) }]
+          [Thread.new { store.sadd('a', i) }, Thread.new { store.sadd('b', [i]) }]
         }.flatten.map(&:join)
-        %w{a b}.each {|key| expect(store.read_set(key)).to eql(Set.new(10.times.map(&:to_s))) }
+        %w{a b}.each {|key| expect(store.smembers(key)).to eql(Set.new(10.times.map(&:to_s))) }
       end
     end
 
-    describe '#del_to_list' do
+    describe '#srem' do
       let(:vals) { (1..10).to_a }
 
       before :each do
-        store.push_to_set('a', vals)
+        store.sadd('a', vals)
       end
 
       it 'should remove from set' do
         expect {
-          store.del_from_set('a', 2)
-          store.del_from_set('a', [4, 5])
-        }.to change { store.read_set('a').length }.by(-3)
-        expect(store.read_set('a')).to eq(Set.new((vals - [2, 4, 5]).map(&:to_s)))
+          store.srem('a', 2)
+          store.srem(:a, ['4', 5])
+          store.srem(:a, 123)
+        }.to change { store.smembers('a').length }.by(-3)
+        expect(store.smembers('a')).to eq(Set.new((vals - [2, 4, 5]).map(&:to_s)))
       end
 
       it 'should correct store when use multiple threads' do
-        store.push_to_set('b', vals)
+        store.sadd('b', vals)
         10.times.map {|i|
-          [Thread.new { store.del_from_set('a', i) }, Thread.new { store.del_from_set('b', [i]) }]
+          [Thread.new { store.srem('a', i) }, Thread.new { store.srem('b', [i]) }]
         }.flatten.map(&:join)
-        %w{a b}.each {|key| expect(store.read_set(key)).to eql(Set.new(['10'])) }
+        %w{a b}.each {|key| expect(store.smembers(key)).to eql(Set.new(['10'])) }
+      end
+    end
+
+    describe '#sismember' do
+      before :each do
+        store.sadd('s', ['a', 'b', 'd'])
+      end
+
+      it 'should return true when have member' do
+        expect(store.sismember('s', 'a')).to eql(true)
+        expect(store.sismember(:s, 'b')).to eql(true)
+        expect(store.sismember('s', 'd')).to eql(true)
+      end
+
+      it 'should retrun false when not a member of the set' do
+        expect(store.sismember('s', 'c')).to eql(false)
+        expect(store.sismember('s', 'e')).to eql(false)
+        expect(store.sismember(:s, 'easdf')).to eql(false)
+      end
+
+      it 'should return false when set not exist' do
+        expect(store.sismember(:sss, 'easdf')).to eql(false)
       end
     end
   end

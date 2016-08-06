@@ -25,7 +25,13 @@ module WebShield
 
       user = config.user_parser.call(request)
 
-      if @config.store.incr(get_store_key(request, user), options[:period]) <= options[:limit]
+      incr_opts = if (period = options[:period]) > 0
+        {expire_at: (Time.now.to_i / period + 1).to_i * period}
+      else
+        {}
+      end
+
+      if @config.store.incr(get_store_key(request, user), incr_opts) <= options[:limit]
         write_log(:debug, "Pass '#{user}' #{request.request_method} #{req_path}")
         :pass
       else

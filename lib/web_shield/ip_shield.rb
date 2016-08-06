@@ -44,11 +44,11 @@ module WebShield
     end
 
     def push_to_whitelist(ips)
-      config.store.push_to_set(get_store_key('whitelist'), ips)
+      config.store.sadd(get_store_key('whitelist'), ips)
     end
 
     def push_to_blacklist(ips)
-      config.store.push_to_set(get_store_key('blacklist'), ips)
+      config.store.sadd(get_store_key('blacklist'), ips)
     end
 
 
@@ -56,7 +56,7 @@ module WebShield
 
     # TODO optimize it
     def in_ip_list?(list_key, ip)
-      config.store.read_set(list_key).any? {|ip_range| IPAddr.new(ip_range).include?(ip) }
+      config.store.smembers(list_key).any? {|ip_range| IPAddr.new(ip_range).include?(ip) }
     end
 
     def get_store_key(list_name)
