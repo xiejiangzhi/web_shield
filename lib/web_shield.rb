@@ -14,6 +14,8 @@ module WebShield
   autoload :Shield, 'web_shield/shield'
   autoload :ThrottleShield, 'web_shield/throttle_shield'
   autoload :IPShield, 'web_shield/ip_shield'
+  autoload :CreditShield, 'web_shield/credit_shield'
+  autoload :CreditAnalyzer, 'web_shield/credit_analyzer'
 
   autoload :Middleware, 'web_shield/middleware'
 

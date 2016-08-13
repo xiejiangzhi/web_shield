@@ -3,17 +3,15 @@ require 'ipaddr'
 
 module WebShield
   class IPShield < Shield
-    OPTION_KEYS =[:whitelist, :blacklist]
 
-    # Params:
-    #   path:
-    #   options:
-    #     whitelist: options, defualt [], like 172.10.10.10 172.10.10.10/16
-    #     blacklist: options, default [], like 172.10.10.10 172.10.10.10/16
+    # Options
+    #   whitelist: options, defualt [], like 172.10.10.10 172.10.10.10/16
+    #   blacklist: options, default [], like 172.10.10.10 172.10.10.10/16
+    allow_option_keys :whitelist, :blacklist
+
     def initialize(id, shield_path, options, config)
       super
 
-      check_options(@options)
       @options[:dictatorial] = true
       push_to_whitelist(options[:whitelist]) if options[:whitelist]
       push_to_blacklist(options[:blacklist]) if options[:blacklist]
@@ -60,13 +58,7 @@ module WebShield
     end
 
     def get_store_key(list_name)
-      ['web_shield', 'ip_shield', list_name].join('/')
-    end
-
-    def check_options(options)
-      options.each do |key, val|
-        raise Error, "Invalid shield option '#{key}'" unless OPTION_KEYS.include?(key)
-      end
+      generate_store_key(list_name)
     end
   end
 end

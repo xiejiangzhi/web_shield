@@ -4,12 +4,27 @@ module WebShield
   class Shield
     attr_reader :id, :shield_path, :path_matcher, :options, :config
 
+    class << self
+      def allowed_option_keys
+        @allowed_option_keys ? @allowed_option_keys.dup : []
+      end
+
+
+      private
+
+      def allow_option_keys(*keys)
+        @allowed_option_keys = keys.map(&:to_sym)
+      end
+    end
+
     def initialize(id, shield_path, options, config)
       @id = id
       @shield_path = shield_path
       @path_matcher = build_path_matcher(shield_path)
       @options = hash_to_symbol_keys(options)
       @config = config
+
+      check_options(@options)
     end
 
     # Returns: :pass, :block, [:response, rack_response], nil
@@ -51,6 +66,18 @@ module WebShield
         key, val = kv[0].to_sym, kv[1]
         result[key] = val
       end
+    end
+
+    def check_options(options)
+      options.each do |key, val|
+        unless self.class.allowed_option_keys.include?(key)
+          raise Error, "Invalid shield option '#{key}'"
+        end
+      end
+    end
+
+    def generate_store_key(suffix)
+     ['WS', "#{self.class.name.split('::').last}\##{id}", suffix.to_s].join(':')
     end
   end
 end

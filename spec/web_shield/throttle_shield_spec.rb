@@ -16,14 +16,6 @@ module WebShield
       ThrottleShield.new(id, path, opts, config)
     end
 
-    describe '#initialize' do
-      it 'should raise error, if have invalid options' do
-        expect {
-          ThrottleShield.new('id1', '*', {test: 1}, config)
-        }.to raise_error("Invalid shield option 'test'")
-      end
-    end
-
     describe '#filter' do
       it 'should return :pass, if request ok' do
         expect(shield.filter(request)).to eql(:pass)

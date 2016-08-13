@@ -15,6 +15,18 @@ module WebShield
       Shield.new(id, path, opts, config)
     end
 
+    before :each do
+      Shield.send(:allow_option_keys, :period, :limit)
+    end
+
+    describe '#initialize' do
+      it 'should raise error, if have invalid options' do
+        expect {
+          Shield.new('id1', '*', {test: 1}, config)
+        }.to raise_error("Invalid shield option 'test'")
+      end
+    end
+
     describe '#id' do
       it 'should use init argument' do
         expect(shield.id).to eql('id1')
