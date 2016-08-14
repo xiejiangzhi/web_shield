@@ -18,6 +18,16 @@ module WebShield
       CreditShield.new(id, path, opts, config)
     end
 
+    describe '#initialize' do
+      it 'should create credit_analyzer' do
+        cls_a = Class.new { def initialize(*args); end }
+        expect(cls_a).to receive(:new).with(kind_of(CreditShield)).and_call_original
+
+        shield = CreditShield.new('id', '*', {credit_analyzer_class: cls_a}, config)
+        expect(shield.credit_analyzer).to be_a(cls_a)
+      end
+    end
+
     describe '#filter' do
       it 'should return :pass, if valid request' do
         expect(shield).to receive(:check_request).with('127.0.0.1', 'uid').and_return(true)
@@ -30,7 +40,7 @@ module WebShield
       end
 
       it 'should call CreditAnalyzer#analyze' do
-        expect(CreditAnalyzer).to receive(:analyze).with('127.0.0.1', 'uid', {}, {'a' => '1'})
+        expect(shield.credit_analyzer).to receive(:analyze).with('127.0.0.1', 'uid', {}, {'a' => '1'})
         shield.filter(request)
         sleep 0.2
       end

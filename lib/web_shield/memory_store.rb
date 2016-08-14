@@ -23,8 +23,9 @@ module WebShield
     end
 
     def incr(key, options = {})
+      increment = options.delete(:increment) || options.delete('increment') || 1
       @lock.synchronize do
-        set_data(key, get_data(key).to_i + 1, options)
+        set_data(key, get_data(key).to_i + increment, options)
       end
     end
 

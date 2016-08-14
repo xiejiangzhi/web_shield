@@ -5,18 +5,21 @@ module WebShield
     #   default_user_credit: options, default 60
     #   default_ip_credit: options, default 600
     #   period: options, credit period, default 60
-    #   credit_analyzer:
-    #     Proc.new {|ip, user, headers, params| Thread.new { CreditAnalyzer.analyze(*args) } }
-    allow_option_keys :default_user_credit, :default_ip_credit, :period
+    #   credit_analyzer_class: CreditAnalyzer
+    allow_option_keys(
+      :default_user_credit, :default_ip_credit, :period,
+      :credit_analyzer_class
+    )
+
+    attr_reader :credit_analyzer
 
     def initialize(*args)
       super
       options[:default_user_credit] ||= 60
       options[:default_ip_credit] ||= 600
       options[:period] ||= 60
-      options[:credit_analyzer] ||= Proc.new do |ip, user, headers, params|
-        Thread.new { CreditAnalyzer.analyze(ip, user, headers, params) }
-      end
+      options[:credit_analyzer_class] ||= CreditAnalyzer
+      @credit_analyzer = options[:credit_analyzer_class].new(self)
     end
 
     def filter(request)
@@ -61,20 +64,24 @@ module WebShield
       end
     end
 
-
-    private
-
+    # type: u or ip
+    # name: user identifier or ip
     def get_request_counter_key(type, name)
       generate_store_key("#{type}-r:#{name}")
     end
 
+    # type: u or ip
+    # name: user identifier or ip
     def get_credit_key(type, name)
       generate_store_key("#{type}-c:#{name}")
     end
 
+
+    private
+
     def analyze_request(ip, user, request)
       header = request.env.select {|k, v| k =~ /^HTTP_/ }
-      options[:credit_analyzer].call(ip, user, header, request.params.to_hash)
+      credit_analyzer.analyze(ip, user, header, request.params.to_hash)
     end
   end
 end

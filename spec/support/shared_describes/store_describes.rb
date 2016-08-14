@@ -40,9 +40,11 @@ RSpec.shared_examples 'store_describes' do |store_cls|
       it 'should incr counter' do
         expect(store.incr('a')).to eq(1)
         expect(store.incr(:a)).to eq(2)
-        expect(store.incr('b')).to eq(1)
-        expect(store.incr('b')).to eq(2)
-        expect(store.incr('a')).to eq(3)
+        expect(store.incr(:a, increment: 2)).to eq(4)
+
+        expect(store.incr('b', increment: 10)).to eq(10)
+        expect(store.incr('b')).to eq(11)
+        expect(store.incr('a')).to eq(5)
       end
 
       it 'should expire old counter' do
